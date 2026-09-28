@@ -110,7 +110,7 @@ n_tc = SO_MAU_TONG - n_bt  # 3000 mẫu tấn công
 CONG_TAN_CONG = [80, 443, 22, 3389]
 
 df_tan_cong = pd.DataFrame({
-    "packet_length": np.random.randint(40, 55, size=n_tc),            # Cực nhỏ: 40-54 bytes
+    "packet_length": np.random.randint(40, 65, size=n_tc),            # Bao gồm cả padding Ethernet (60-64 bytes)
     "src_port"     : np.random.randint(1024, 65535, size=n_tc),       # Port giả mạo ngẫu nhiên
     "dst_port"     : np.random.choice(CONG_TAN_CONG, size=n_tc,
                                       p=[0.45, 0.35, 0.12, 0.08]),    # Chủ yếu nhắm HTTP/HTTPS
