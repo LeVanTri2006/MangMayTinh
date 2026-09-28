@@ -37,7 +37,7 @@ def phan_tich_goi_tin(goi_tin):
 
         # [BỘ LỌC CHỐNG NHIỄU NGAY TẠI CLIENT] 
         # Giúp tiết kiệm băng thông mạng, không gửi rác về Server
-        if do_dai_goi_tin <= 54 or cong_dich == 443:
+        if (do_dai_goi_tin <= 54 and co_syn == 0) or cong_dich == 443:
             return
 
         # 2. Đóng gói dữ liệu kèm theo IP để Server biết ai đang bị tấn công
