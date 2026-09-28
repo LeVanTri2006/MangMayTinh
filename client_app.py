@@ -108,11 +108,18 @@ class DesktopClientApp:
             co_syn = 1 if 'S' in str(goi_tin[TCP].flags) else 0
             co_ack = 1 if 'A' in str(goi_tin[TCP].flags) else 0
 
+            # DEBUG LOG: Báo cáo khi thấy gói SYN xuất hiện
+            if co_syn == 1:
+                print(f"[DEBUG - CLIENT] Bắt được gói SYN | Nguồn: {goi_tin[IP].src}:{cong_nguon} | Đích: {goi_tin[IP].dst}:{cong_dich} | Size: {do_dai_goi_tin} bytes")
+
             # BỘ LỌC CHỐNG NHIỄU (Tiết kiệm băng thông)
             # Trước đây ta chặn mọi gói tin <= 54 byte. Nhưng gói tấn công SYN của Hacker
             # cũng dài đúng 54 byte. Nên ta chỉ chặn gói tin 54 byte NẾU NÓ KHÔNG CÓ CỜ SYN.
             if (do_dai_goi_tin <= 54 and co_syn == 0) or cong_dich == 443:
                 return
+
+            if co_syn == 1:
+                print("[DEBUG - CLIENT] --> Gói SYN hợp lệ, chuẩn bị đóng gói gửi lên Server!")
 
             du_lieu_mang = {
                 "ip_nguon": goi_tin[IP].src,

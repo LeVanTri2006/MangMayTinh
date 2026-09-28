@@ -100,6 +100,8 @@ class ServerApp:
                     
                 du_lieu = json.loads(raw_data.decode('utf-8'))
                 
+                print(f"\n[DEBUG - SERVER] Vừa nhận JSON: {du_lieu}")
+                
                 # Biến đổi thành DataFrame 5 cột cho AI
                 df_input = pd.DataFrame([[
                     du_lieu['do_dai_goi_tin'], du_lieu['cong_nguon'],
@@ -108,6 +110,8 @@ class ServerApp:
                 
                 # AI DỰ ĐOÁN
                 ket_qua = self.mo_hinh_ai.predict(df_input)[0]
+                
+                print(f"[DEBUG - SERVER] --> AI Phán quyết: {'TẤN CÔNG (1)' if ket_qua == 1 else 'BÌNH THƯỜNG (0)'}")
                 
                 if ket_qua == 1:
                     canh_bao = {
