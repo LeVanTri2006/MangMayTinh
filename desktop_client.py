@@ -109,7 +109,9 @@ class DesktopClientApp:
             co_ack = 1 if 'A' in str(goi_tin[TCP].flags) else 0
 
             # BỘ LỌC CHỐNG NHIỄU (Tiết kiệm băng thông)
-            if do_dai_goi_tin <= 54 or cong_dich == 443:
+            # Trước đây ta chặn mọi gói tin <= 54 byte. Nhưng gói tấn công SYN của Hacker
+            # cũng dài đúng 54 byte. Nên ta chỉ chặn gói tin 54 byte NẾU NÓ KHÔNG CÓ CỜ SYN.
+            if (do_dai_goi_tin <= 54 and co_syn == 0) or cong_dich == 443:
                 return
 
             du_lieu_mang = {
