@@ -50,7 +50,7 @@ CONG_BINH_THUONG = [80, 443, 22, 53, 25, 110, 143, 8080, 3389, 21, 8443, 993]
 # --- Loại 1: Gói SYN hợp lệ (bắt đầu kết nối TCP) ~15% ---
 n_syn = int(n_bt * 0.15)
 df_syn_hop_le = pd.DataFrame({
-    "packet_length": np.random.randint(60, 75, size=n_syn),          # SYN: 60-74 bytes
+    "packet_length": np.random.randint(65, 80, size=n_syn),          # Đã tăng lên 65-80 để tách biệt với SYN Flood
     "src_port"     : np.random.randint(1024, 65535, size=n_syn),
     "dst_port"     : np.random.choice(CONG_BINH_THUONG, size=n_syn),
     "tcp_syn_flag" : np.ones(n_syn,  dtype=int),   # SYN = 1
@@ -61,7 +61,7 @@ df_syn_hop_le = pd.DataFrame({
 # --- Loại 2: Gói SYN-ACK (server trả lời bắt tay) ~10% ---
 n_synack = int(n_bt * 0.10)
 df_synack = pd.DataFrame({
-    "packet_length": np.random.randint(60, 75, size=n_synack),
+    "packet_length": np.random.randint(65, 80, size=n_synack),
     "src_port"     : np.random.choice(CONG_BINH_THUONG, size=n_synack),  # Từ server
     "dst_port"     : np.random.randint(1024, 65535, size=n_synack),       # Về client
     "tcp_syn_flag" : np.ones(n_synack,  dtype=int),   # SYN = 1
@@ -110,7 +110,7 @@ n_tc = SO_MAU_TONG - n_bt  # 3000 mẫu tấn công
 CONG_TAN_CONG = [80, 443, 22, 3389]
 
 df_tan_cong = pd.DataFrame({
-    "packet_length": np.random.randint(40, 55, size=n_tc),            # Cực nhỏ: 40-54 bytes
+    "packet_length": np.random.randint(40, 65, size=n_tc),            # Bao gồm cả padding Ethernet (60-64 bytes)
     "src_port"     : np.random.randint(1024, 65535, size=n_tc),       # Port giả mạo ngẫu nhiên
     "dst_port"     : np.random.choice(CONG_TAN_CONG, size=n_tc,
                                       p=[0.45, 0.35, 0.12, 0.08]),    # Chủ yếu nhắm HTTP/HTTPS
