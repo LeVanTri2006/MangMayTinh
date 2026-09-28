@@ -70,6 +70,12 @@ class ServerApp:
         
         while True:
             conn, addr = server_socket.accept()
+            
+            # Báo hiệu lên giao diện ngay khi có Cảm biến kết nối tới
+            self.root.after(0, lambda a=addr: self.lbl_status.config(
+                text=f"🟢 Đã kết nối với Cảm biến {a[0]}:{a[1]} | Đang giám sát an ninh...", fg="#00FF00"
+            ))
+            
             threading.Thread(target=self.handle_client, args=(conn, addr), daemon=True).start()
 
     def recvall(self, sock, n):
