@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import scrolledtext, ttk
+from tkinter import scrolledtext, ttk, messagebox
 import socket
 import json
 import threading
@@ -20,40 +20,51 @@ class DesktopClientApp:
         self.goi_tin_da_gui = 0
 
         # --- GIAO DIỆN ---
-        lbl_title = tk.Label(root, text="📡 TRẠM CẢM BIẾN MẠNG (AGENT SENSOR)", font=("Helvetica", 14, "bold"), bg="#0d1b2a", fg="#00b4d8")
-        lbl_title.pack(pady=10)
+        # 1. Header
+        lbl_title = tk.Label(root, text="📡 TRẠM CẢM BIẾN MẠNG (AGENT SENSOR)", font=("Helvetica", 16, "bold"), bg="#0d1b2a", fg="#00F0FF")
+        lbl_title.pack(pady=(15, 5))
+        
+        self.lbl_status_main = tk.Label(root, text="🔴 TRẠNG THÁI: CHƯA KẾT NỐI", font=("Consolas", 12, "bold"), bg="#0d1b2a", fg="#ff4d4d")
+        self.lbl_status_main.pack(pady=(0, 10))
 
-        # Khung Cấu hình Kết nối
-        frame_config = tk.Frame(root, bg="#0d1b2a")
-        frame_config.pack(pady=10)
+        # Khung chứa Cấu hình & Nút bấm
+        frame_top = tk.Frame(root, bg="#0d1b2a")
+        frame_top.pack(fill=tk.X, padx=20)
 
-        tk.Label(frame_config, text="IP Máy chủ (Server):", bg="#0d1b2a", fg="white", font=("Helvetica", 10)).grid(row=0, column=0, padx=5)
-        self.entry_ip = tk.Entry(frame_config, width=15, font=("Helvetica", 10))
-        self.entry_ip.insert(0, "127.0.0.1") # Mặc định là localhost
-        self.entry_ip.grid(row=0, column=1, padx=5)
+        # 2. Cấu hình Kết nối (Bên trái)
+        frame_config = tk.LabelFrame(frame_top, text="🔧 Cấu hình Kết nối", bg="#0d1b2a", fg="white", font=("Helvetica", 10, "bold"), bd=1)
+        frame_config.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
 
-        tk.Label(frame_config, text="Port:", bg="#0d1b2a", fg="white", font=("Helvetica", 10)).grid(row=0, column=2, padx=5)
-        self.entry_port = tk.Entry(frame_config, width=6, font=("Helvetica", 10))
+        tk.Label(frame_config, text="IP Máy chủ:", bg="#0d1b2a", fg="white", font=("Helvetica", 10)).grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        self.entry_ip = tk.Entry(frame_config, width=15, font=("Consolas", 11), bg="#1b263b", fg="white", insertbackground="white", relief=tk.FLAT)
+        self.entry_ip.insert(0, "127.0.0.1")
+        self.entry_ip.grid(row=0, column=1, padx=10, pady=10)
+
+        tk.Label(frame_config, text="Port:", bg="#0d1b2a", fg="white", font=("Helvetica", 10)).grid(row=0, column=2, padx=10, pady=10, sticky="w")
+        self.entry_port = tk.Entry(frame_config, width=6, font=("Consolas", 11), bg="#1b263b", fg="white", insertbackground="white", relief=tk.FLAT)
         self.entry_port.insert(0, "9999")
-        self.entry_port.grid(row=0, column=3, padx=5)
+        self.entry_port.grid(row=0, column=3, padx=10, pady=10)
 
-        # Nút điều khiển
-        frame_btns = tk.Frame(root, bg="#0d1b2a")
-        frame_btns.pack(pady=5)
+        # 3. Bảng điều khiển (Bên phải)
+        frame_btns = tk.LabelFrame(frame_top, text="⚡ Điều khiển", bg="#0d1b2a", fg="white", font=("Helvetica", 10, "bold"), bd=1)
+        frame_btns.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
-        self.btn_start = tk.Button(frame_btns, text="▶ Bắt đầu Lắng nghe & Kết nối", bg="#4CAF50", fg="white", font=("Helvetica", 10, "bold"), command=self.start_agent)
-        self.btn_start.grid(row=0, column=0, padx=10)
+        self.btn_start = tk.Button(frame_btns, text="▶ KHỞI ĐỘNG CẢM BIẾN", bg="#00e676", fg="black", font=("Helvetica", 10, "bold"), relief=tk.FLAT, command=self.start_agent)
+        self.btn_start.pack(fill=tk.X, padx=10, pady=(10, 5))
 
-        self.btn_stop = tk.Button(frame_btns, text="⏹ Dừng lại", bg="#f44336", fg="white", font=("Helvetica", 10, "bold"), state=tk.DISABLED, command=self.stop_agent)
-        self.btn_stop.grid(row=0, column=1, padx=10)
+        self.btn_stop = tk.Button(frame_btns, text="⏹ DỪNG LẠI", bg="#ff1744", fg="white", font=("Helvetica", 10, "bold"), relief=tk.FLAT, state=tk.DISABLED, command=self.stop_agent)
+        self.btn_stop.pack(fill=tk.X, padx=10, pady=(0, 10))
 
-        # Thống kê
-        self.lbl_stats = tk.Label(root, text="Số gói tin đã bóc tách & gửi về Server: 0", bg="#0d1b2a", fg="yellow", font=("Helvetica", 10, "italic"))
-        self.lbl_stats.pack(pady=5)
+        # 4. Thống kê
+        self.lbl_stats = tk.Label(root, text="📊 Số gói tin đã xử lý & gửi về Server: 0", bg="#0d1b2a", fg="#ffea00", font=("Consolas", 11, "bold"))
+        self.lbl_stats.pack(pady=10)
 
-        # Khung Log
-        self.txt_log = scrolledtext.ScrolledText(root, bg="#000000", fg="#00FFFF", font=("Consolas", 10), state=tk.DISABLED)
-        self.txt_log.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
+        # 5. Khung Log Terminal
+        frame_log = tk.LabelFrame(root, text="🖥️ Terminal Giám sát (Real-time)", bg="#0d1b2a", fg="white", font=("Helvetica", 10, "bold"), bd=1)
+        frame_log.pack(fill=tk.BOTH, expand=True, padx=20, pady=(0, 20))
+
+        self.txt_log = scrolledtext.ScrolledText(frame_log, bg="#000000", fg="#00FF41", font=("Consolas", 10), state=tk.DISABLED, relief=tk.FLAT)
+        self.txt_log.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
@@ -61,6 +72,11 @@ class DesktopClientApp:
         """Hàm in chữ ra màn hình log"""
         self.txt_log.config(state=tk.NORMAL)
         self.txt_log.insert(tk.END, message + "\n")
+        
+        # CHỐNG GIẬT LAG: Chỉ giữ tối đa 500 dòng log gần nhất trên màn hình
+        if int(self.txt_log.index('end-1c').split('.')[0]) > 500:
+            self.txt_log.delete('1.0', '2.0')
+            
         self.txt_log.see(tk.END)
         self.txt_log.config(state=tk.DISABLED)
 
@@ -74,11 +90,14 @@ class DesktopClientApp:
             self.client_socket.connect((server_ip, server_port))
             self.log(f"[+] KẾT NỐI THÀNH CÔNG TỚI SERVER {server_ip}:{server_port}")
         except Exception as e:
-            self.log(f"[-] LỖI KẾT NỐI: Không tìm thấy Server ở IP {server_ip}. Hãy chắc chắn Server đã bật!")
+            # Hiển thị thông báo dạng Pop-up trên giao diện
+            messagebox.showerror("Lỗi Kết Nối", f"Không thể kết nối đến Server ở IP: {server_ip}\n\n1. Hãy kiểm tra lại xem đã gõ đúng IP chưa.\n2. Đảm bảo Trạm Chỉ Huy (Server) đã được bật!")
+            self.log(f"[-] LỖI KẾT NỐI: Không tìm thấy Server ở IP {server_ip}.")
             return
 
         # 2. Thay đổi trạng thái giao diện
         self.is_sniffing = True
+        self.lbl_status_main.config(text="🟢 TRẠNG THÁI: ĐANG LẮNG NGHE & KẾT NỐI", fg="#00e676")
         self.btn_start.config(state=tk.DISABLED)
         self.btn_stop.config(state=tk.NORMAL)
         self.entry_ip.config(state=tk.DISABLED)
@@ -89,8 +108,9 @@ class DesktopClientApp:
 
     def run_sniffer(self):
         self.log("[*] Đang móc vào Card mạng... Bắt đầu bóc tách dữ liệu!")
-        # stop_filter sẽ tự động dừng Scapy khi self.is_sniffing = False
-        sniff(prn=self.phan_tich_goi_tin, store=False, stop_filter=lambda x: not self.is_sniffing)
+        # Đang test 1 máy nên dùng tạm iface="lo" (Loopback). Khi nào đem 2 máy đi báo cáo thì XÓA chữ iface="lo" đi.
+        sniff(iface="lo", prn=self.phan_tich_goi_tin, store=False, stop_filter=lambda x: not self.is_sniffing)
+        # sniff(prn=self.phan_tich_goi_tin, store=False, stop_filter=lambda x: not self.is_sniffing)
         self.log("[-] Đã dừng thu thập dữ liệu mạng.")
 
     def phan_tich_goi_tin(self, goi_tin):
@@ -108,9 +128,11 @@ class DesktopClientApp:
             co_syn = 1 if 'S' in str(goi_tin[TCP].flags) else 0
             co_ack = 1 if 'A' in str(goi_tin[TCP].flags) else 0
 
-            # DEBUG LOG: Báo cáo khi thấy gói SYN xuất hiện
-            if co_syn == 1:
-                print(f"[DEBUG - CLIENT] Bắt được gói SYN | Nguồn: {goi_tin[IP].src}:{cong_nguon} | Đích: {goi_tin[IP].dst}:{cong_dich} | Size: {do_dai_goi_tin} bytes")
+            # LOG TẤT CẢ GÓI TIN ĐI QUA CARD MẠNG
+            loai_goi = "TẤN CÔNG SYN?" if co_syn == 1 else "TRAFFIC THƯỜNG"
+            icon = "🚨" if co_syn == 1 else "🌐"
+            msg = f"{icon} [{loai_goi}] | {goi_tin[IP].src}:{cong_nguon} --> {goi_tin[IP].dst}:{cong_dich} | {do_dai_goi_tin} bytes"
+            self.root.after(0, lambda m=msg: self.log(m))
 
             # BỘ LỌC CHỐNG NHIỄU (Tiết kiệm băng thông & Chống lặp vô hạn)
             # 1. Bỏ qua các gói tin của cổng 9999 (Đây là cổng 2 phần mềm đang dùng để chat với nhau)
@@ -122,7 +144,8 @@ class DesktopClientApp:
                 return
 
             if co_syn == 1:
-                print("[DEBUG - CLIENT] --> Gói SYN hợp lệ, chuẩn bị đóng gói gửi lên Server!")
+                self.root.after(0, lambda: self.log("    🚀 -> Đã lọt qua màng lọc, đang đóng gói gửi lên Server!"))
+
 
             du_lieu_mang = {
                 "ip_nguon": goi_tin[IP].src,
@@ -155,6 +178,7 @@ class DesktopClientApp:
             self.client_socket.close()
             self.client_socket = None
         
+        self.lbl_status_main.config(text="🔴 TRẠNG THÁI: ĐÃ DỪNG", fg="#ff4d4d")
         self.btn_start.config(state=tk.NORMAL)
         self.btn_stop.config(state=tk.DISABLED)
         self.entry_ip.config(state=tk.NORMAL)

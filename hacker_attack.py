@@ -3,8 +3,8 @@ import time
 import random
 
 # Đặt IP đích là IP LAN của máy bạn
-TARGET_IP = "172.26.23.136" 
-TARGET_PORT = 9999
+TARGET_IP = "127.0.0.1" 
+TARGET_PORT = 80
 
 print(f"🚀 Kích hoạt vũ khí Hacker [CHẾ ĐỘ RẢI RÁC - 5s/lần]: Bắn SYN vào {TARGET_IP}...")
 
