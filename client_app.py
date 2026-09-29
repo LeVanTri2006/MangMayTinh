@@ -109,8 +109,8 @@ class DesktopClientApp:
     def run_sniffer(self):
         self.log("[*] Đang móc vào Card mạng... Bắt đầu bóc tách dữ liệu!")
         # Đang test 1 máy nên dùng tạm iface="lo" (Loopback). Khi nào đem 2 máy đi báo cáo thì XÓA chữ iface="lo" đi.
-        sniff(iface="lo", prn=self.phan_tich_goi_tin, store=False, stop_filter=lambda x: not self.is_sniffing)
-        # sniff(prn=self.phan_tich_goi_tin, store=False, stop_filter=lambda x: not self.is_sniffing)
+        # sniff(iface="lo", prn=self.phan_tich_goi_tin, store=False, stop_filter=lambda x: not self.is_sniffing)
+        sniff(prn=self.phan_tich_goi_tin, store=False, stop_filter=lambda x: not self.is_sniffing)
         self.log("[-] Đã dừng thu thập dữ liệu mạng.")
 
     def phan_tich_goi_tin(self, goi_tin):

@@ -23,6 +23,7 @@ class ServerApp:
             sys.exit(1)
 
         self.alerts = []
+        self.connected_clients = {} # Dict lưu thông tin các Cảm biến (IP, Port, Time_in, Time_out)
         self.lock = threading.Lock()
         self.previous_count = 0
 
@@ -33,33 +34,69 @@ class ServerApp:
         style.configure("Treeview.Heading", background="#333333", foreground="white", font=("Helvetica", 11, "bold"))
         style.map('Treeview', background=[('selected', '#d32f2f')])
         
-        self.lbl_title = tk.Label(root, text="🛡️ TRẠM CHỈ HUY KIỂM SOÁT XÂM NHẬP (AI-SERVER)", font=("Helvetica", 16, "bold"), bg="#121212", fg="#00FF00")
-        self.lbl_title.pack(pady=15)
+        self.lbl_title = tk.Label(root, text="🛡️ TRẠM CHỈ HUY KIỂM SOÁT XÂM NHẬP (AI-SERVER)", font=("Helvetica", 16, "bold"), bg="#121212", fg="#00F0FF")
+        self.lbl_title.pack(pady=10)
 
         self.lbl_status = tk.Label(root, text="🔌 Đang khởi động Server TCP...", font=("Helvetica", 11, "italic"), bg="#121212", fg="yellow")
         self.lbl_status.pack(pady=5)
         
-        columns = ("thoi_gian", "ip_nguon", "ip_dich", "do_dai", "phan_loai")
-        self.tree = ttk.Treeview(root, columns=columns, show='headings', height=12)
+        # --- KHUNG 1: DANH SÁCH CẢM BIẾN (AGENTS) ---
+        frame_clients = tk.LabelFrame(root, text="📡 DANH SÁCH CẢM BIẾN (AGENTS)", bg="#121212", fg="white", font=("Helvetica", 11, "bold"))
+        frame_clients.pack(fill=tk.BOTH, expand=False, padx=20, pady=5)
         
-        self.tree.heading("thoi_gian", text="Thời gian")
-        self.tree.heading("ip_nguon", text="IP Nguồn (Kẻ tấn công)")
-        self.tree.heading("ip_dich", text="IP Đích (Mục tiêu)")
-        self.tree.heading("do_dai", text="Chiều dài (TCP)")
-        self.tree.heading("phan_loai", text="Trạng thái")
+        cols_client = ("ip", "port", "time_in", "time_out", "status")
+        self.tree_clients = ttk.Treeview(frame_clients, columns=cols_client, show='headings', height=4)
+        
+        self.tree_clients.heading("ip", text="IP Cảm biến")
+        self.tree_clients.heading("port", text="Cổng")
+        self.tree_clients.heading("time_in", text="Thời gian Đến (Connect)")
+        self.tree_clients.heading("time_out", text="Thời gian Đi (Disconnect)")
+        self.tree_clients.heading("status", text="Trạng thái")
+        
+        self.tree_clients.column("ip", width=150, anchor=tk.CENTER)
+        self.tree_clients.column("port", width=80, anchor=tk.CENTER)
+        self.tree_clients.column("time_in", width=180, anchor=tk.CENTER)
+        self.tree_clients.column("time_out", width=180, anchor=tk.CENTER)
+        self.tree_clients.column("status", width=120, anchor=tk.CENTER)
+        self.tree_clients.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        # --- KHUNG 2: NHẬT KÝ TẤN CÔNG ---
+        frame_alerts = tk.LabelFrame(root, text="🚨 NHẬT KÝ TẤN CÔNG (THỜI GIAN THỰC)", bg="#121212", fg="#ff4d4d", font=("Helvetica", 11, "bold"))
+        frame_alerts.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+
+        columns = ("thoi_gian", "ip_nguon", "ip_dich", "do_dai", "phan_loai")
+        self.tree = ttk.Treeview(frame_alerts, columns=columns, show='headings', height=10)
+        
+        self.tree.heading("thoi_gian", text="Thời gian Báo động")
+        self.tree.heading("ip_nguon", text="IP Kẻ tấn công")
+        self.tree.heading("ip_dich", text="IP Nạn nhân")
+        self.tree.heading("do_dai", text="Kích thước")
+        self.tree.heading("phan_loai", text="Mức độ")
         
         self.tree.column("thoi_gian", width=180, anchor=tk.CENTER)
         self.tree.column("ip_nguon", width=180, anchor=tk.CENTER)
         self.tree.column("ip_dich", width=180, anchor=tk.CENTER)
         self.tree.column("do_dai", width=120, anchor=tk.CENTER)
         self.tree.column("phan_loai", width=120, anchor=tk.CENTER)
-        self.tree.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        self.tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # Chạy TCP Server ngầm
         threading.Thread(target=self.start_tcp_server, daemon=True).start()
 
         # Chạy vòng lặp cập nhật giao diện
         self.update_gui_loop()
+        
+    def update_clients_gui(self):
+        """Cập nhật dữ liệu vào bảng Danh sách Cảm biến (Gọi từ các Thread)"""
+        for item in self.tree_clients.get_children():
+            self.tree_clients.delete(item)
+            
+        with self.lock:
+            for addr, info in self.connected_clients.items():
+                self.tree_clients.insert('', 0, values=(
+                    info["ip"], info["port"], 
+                    info["time_in"], info["time_out"], info["status"]
+                ))
 
     def start_tcp_server(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -70,6 +107,17 @@ class ServerApp:
         
         while True:
             conn, addr = server_socket.accept()
+            
+            # Lưu Client vào danh sách
+            with self.lock:
+                self.connected_clients[addr] = {
+                    "ip": addr[0],
+                    "port": addr[1],
+                    "time_in": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "time_out": "-",
+                    "status": "🟢 ONLINE"
+                }
+            self.root.after(0, self.update_clients_gui)
             
             # Báo hiệu lên giao diện ngay khi có Cảm biến kết nối tới
             self.root.after(0, lambda a=addr: self.lbl_status.config(
@@ -125,6 +173,11 @@ class ServerApp:
         except:
             pass
         finally:
+            with self.lock:
+                if addr in self.connected_clients:
+                    self.connected_clients[addr]["time_out"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    self.connected_clients[addr]["status"] = "🔴 OFFLINE"
+            self.root.after(0, self.update_clients_gui)
             client_conn.close()
 
     def update_gui_loop(self):
