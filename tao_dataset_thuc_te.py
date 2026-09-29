@@ -1,25 +1,4 @@
-# =============================================================================
-# TÊN FILE  : tao_dataset_thuc_te.py
-# MÔ TẢ     : Tạo dataset mô phỏng lưu lượng mạng thực tế (5000 mẫu).
-#
-# NGUYÊN TẮC THIẾT KẾ (đúng kỹ thuật mạng):
-#   BÌNH THƯỜNG (label=0):
-#     - Gói SYN hợp lệ : packet_length=60-74,  SYN=1, ACK=0, dst_port đa dạng
-#     - Gói SYN-ACK    : packet_length=60-74,  SYN=1, ACK=1, (server trả lời)
-#     - Gói dữ liệu    : packet_length=100-1500, SYN=0, ACK=1, dst_port đa dạng
-#     - Gói ACK nhỏ    : packet_length=54-60,  SYN=0, ACK=1  (ACK thông thường)
-#     - Gói FIN        : packet_length=54-60,  SYN=0, ACK=1  (đóng kết nối)
-#
-#   TẤN CÔNG SYN FLOOD (label=1):
-#     - packet_length = 40-54 bytes  (cực nhỏ, chỉ có TCP header, không có data)
-#     - SYN=1, ACK=0                 (chỉ bắn SYN, không bao giờ ACK lại)
-#     - dst_port = 80/443/22/3389    (nhắm vào port nổi tiếng)
-#     - src_port ngẫu nhiên          (giả mạo IP nguồn)
-#
-# LÝ DO KHÔNG DÙNG NSL-KDD TRỰC TIẾP:
-#   NSL-KDD mô tả LUỒNG KẾT NỐI (connection flow), không phải gói tin đơn lẻ.
-#   Ánh xạ sai → AI học nhầm → báo động giả liên tục với gói ACK bình thường.
-# =============================================================================
+
 
 import pandas as pd
 import numpy as np
@@ -37,9 +16,8 @@ print("  TẠO DATASET THỰC TẾ CHO AI-IDS")
 print("  (Mô phỏng đúng đặc trưng gói tin TCP/IP)")
 print("=" * 60)
 
-# =============================================================================
+
 # PHẦN 1: TẠO LƯU LƯỢNG BÌNH THƯỜNG (label = 0)
-# =============================================================================
 print("\n[->] Đang tạo lưu lượng BÌNH THƯỜNG...")
 
 n_bt = SO_MAU_TONG // 2  # 3000 mẫu bình thường
@@ -95,36 +73,29 @@ df_binh_thuong = pd.concat([df_syn_hop_le, df_synack, df_data, df_ack], ignore_i
 print(f"     [OK] {len(df_binh_thuong):,} mẫu bình thường (SYN hợp lệ, SYN-ACK, Data, ACK)")
 
 
-# =============================================================================
 # PHẦN 2: TẠO LƯU LƯỢNG TẤN CÔNG SYN FLOOD (label = 1)
-# =============================================================================
 print("[->] Đang tạo lưu lượng TẤN CÔNG SYN FLOOD...")
 
 n_tc = SO_MAU_TONG - n_bt  # 3000 mẫu tấn công
 
-# Đặc điểm SYN Flood:
-# - Gói cực nhỏ (chỉ IP+TCP header, không data): 40-54 bytes
-# - Luôn SYN=1, ACK=0 (không hoàn thành bắt tay 3 bước)
-# - Nhắm vào port phổ biến
-# - Tốc độ cao, src_port thay đổi liên tục (giả mạo)
+
 CONG_TAN_CONG = [80, 443, 22, 3389]
 
 df_tan_cong = pd.DataFrame({
-    "packet_length": np.random.randint(40, 65, size=n_tc),            # Bao gồm cả padding Ethernet (60-64 bytes)
-    "src_port"     : np.random.randint(1024, 65535, size=n_tc),       # Port giả mạo ngẫu nhiên
+    "packet_length": np.random.randint(40, 65, size=n_tc),            
+    "src_port"     : np.random.randint(1024, 65535, size=n_tc),       
     "dst_port"     : np.random.choice(CONG_TAN_CONG, size=n_tc,
-                                      p=[0.45, 0.35, 0.12, 0.08]),    # Chủ yếu nhắm HTTP/HTTPS
-    "tcp_syn_flag" : np.ones(n_tc,  dtype=int),   # SYN = 1 liên tục ← Đặc trưng SYN Flood
-    "tcp_ack_flag" : np.zeros(n_tc, dtype=int),   # ACK = 0 ← Không bao giờ hoàn thành bắt tay
+                                      p=[0.45, 0.35, 0.12, 0.08]),    
+    "tcp_syn_flag" : np.ones(n_tc,  dtype=int),   
+    "tcp_ack_flag" : np.zeros(n_tc, dtype=int),   
     "label"        : np.ones(n_tc, dtype=int)
 })
 
 print(f"     [OK] {len(df_tan_cong):,} mẫu SYN Flood (packet_length=40-54, SYN=1, ACK=0)")
 
 
-# =============================================================================
 # PHẦN 3: GHÉP, TRỘN VÀ LƯU FILE
-# =============================================================================
+
 df_cuoi = pd.concat([df_binh_thuong, df_tan_cong], ignore_index=True)
 df_cuoi = df_cuoi.sample(frac=1, random_state=SEED).reset_index(drop=True)
 

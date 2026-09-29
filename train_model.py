@@ -1,28 +1,17 @@
-# =============================================================================
-# TÊN DỰ ÁN : HỆ THỐNG PHÁT HIỆN XÂM NHẬP DỰA TRÊN TRÍ TUỆ NHÂN TẠO (AI-IDS)
-# TÊN FILE  : train_model.py
-# MÔ TẢ     : Đọc dữ liệu mạng, huấn luyện mô hình Random Forest,
-#              đánh giá kết quả và xuất file "bộ não" ai_model.pkl
-# CÔNG NGHỆ : Python 3.x, pandas, numpy, scikit-learn, joblib
-# =============================================================================
 
-# --- NHẬP CÁC THƯ VIỆN CẦN THIẾT ---
-import pandas as pd                          # Thư viện xử lý dữ liệu dạng bảng (CSV)
-import numpy as np                           # Thư viện xử lý mảng số học
-import joblib                                # Thư viện lưu/tải mô hình sang file .pkl
+import pandas as pd                         
+import numpy as np                           
+import joblib                                
 
-from sklearn.ensemble import RandomForestClassifier   # Thuật toán Rừng Ngẫu Nhiên (mô hình lõi)
-from sklearn.model_selection import train_test_split  # Hàm chia tập dữ liệu Train/Test
-from sklearn.metrics import (                         # Các hàm đánh giá mô hình
-    accuracy_score,
+from sklearn.ensemble import RandomForestClassifier   
+from sklearn.model_selection import train_test_split  
+from sklearn.metrics import (                         
     classification_report,
     confusion_matrix
 )
 
 
-# =============================================================================
 # BƯỚC 1: KHỞI TẠO VÀ NẠP DỮ LIỆU (LOAD DATA)
-# =============================================================================
 def nap_du_lieu(ten_file: str) -> pd.DataFrame:
     """
     Hàm đọc file CSV chứa dữ liệu gói tin mạng.
@@ -55,9 +44,7 @@ def nap_du_lieu(ten_file: str) -> pd.DataFrame:
         raise SystemExit(1)
 
 
-# =============================================================================
 # BƯỚC 2: TIỀN XỬ LÝ DỮ LIỆU (DATA PREPROCESSING)
-# =============================================================================
 def tien_xu_ly_du_lieu(du_lieu: pd.DataFrame):
     """
     Hàm tách dữ liệu thành tập đặc trưng (X) và nhãn (y),
@@ -86,9 +73,6 @@ def tien_xu_ly_du_lieu(du_lieu: pd.DataFrame):
     # y: Vector nhãn - chứa kết quả phân loại (0=Bình thường, 1=Tấn công)
     y = du_lieu['label']
 
-    # Chia tập dữ liệu:
-    #   - test_size=0.2   -> 20% dùng để kiểm thử (Test set)
-    #   - random_state=42 -> Cố định ngẫu nhiên để kết quả tái lập được
     X_huan_luyen, X_kiem_thu, y_huan_luyen, y_kiem_thu = train_test_split(
         X, y,
         test_size=0.2,
@@ -103,9 +87,8 @@ def tien_xu_ly_du_lieu(du_lieu: pd.DataFrame):
     return X_huan_luyen, X_kiem_thu, y_huan_luyen, y_kiem_thu
 
 
-# =============================================================================
+# 
 # BƯỚC 3: HUẤN LUYỆN MÔ HÌNH (MODEL TRAINING)
-# =============================================================================
 def huan_luyen_mo_hinh(X_huan_luyen, y_huan_luyen) -> RandomForestClassifier:
     """
     Hàm khởi tạo và huấn luyện mô hình Rừng Ngẫu Nhiên (Random Forest).
@@ -138,9 +121,7 @@ def huan_luyen_mo_hinh(X_huan_luyen, y_huan_luyen) -> RandomForestClassifier:
     return mo_hinh
 
 
-# =============================================================================
 # BƯỚC 4: ĐÁNH GIÁ MÔ HÌNH (MODEL EVALUATION)
-# =============================================================================
 def danh_gia_mo_hinh(mo_hinh: RandomForestClassifier, X_kiem_thu, y_kiem_thu):
     """
     Hàm sử dụng tập kiểm thử để đo lường chất lượng mô hình AI.
@@ -153,29 +134,23 @@ def danh_gia_mo_hinh(mo_hinh: RandomForestClassifier, X_kiem_thu, y_kiem_thu):
     """
     print("[->] Buoc 4: Dang danh gia mo hinh tren tap kiem thu...")
 
-    # Dùng mô hình dự đoán nhãn cho tập kiểm thử
-    # Kết quả y_du_doan là mảng các giá trị 0 hoặc 1
+    
     y_du_doan = mo_hinh.predict(X_kiem_thu)
 
-    # --- CHỈ SỐ 1: ĐỘ CHÍNH XÁC TỔNG THỂ (ACCURACY SCORE) ---
-    # Tỷ lệ số mẫu dự đoán đúng trên tổng số mẫu kiểm thử
+   
     do_chinh_xac = accuracy_score(y_kiem_thu, y_du_doan)
     print("\n" + "=" * 55)
     print("  KET QUA DANH GIA MO HINH AI-IDS")
     print("=" * 55)
     print(f"  [1] Do Chinh Xac Tong The (Accuracy Score): {do_chinh_xac * 100:.2f}%")
 
-    # --- CHỈ SỐ 2: MA TRẬN NHẦM LẪN (CONFUSION MATRIX) ---
-    # Bảng 2x2 cho biết:
-    #   - [TN] Du doan dung la Binh thuong   [FP] Nham Tan cong la Binh thuong
-    #   - [FN] Nham Binh thuong la Tan cong  [TP] Du doan dung la Tan cong
+    
     ma_tran_nham_lan = confusion_matrix(y_kiem_thu, y_du_doan)
     print("\n  [2] Ma Tran Nham Lan (Confusion Matrix):")
     print("      (Hang=Thuc te, Cot=Du doan | 0=Binh thuong, 1=Tan cong)")
     print(f"      {ma_tran_nham_lan}")
 
-    # --- CHỈ SỐ 3: BÁO CÁO PHÂN LOẠI CHI TIẾT (CLASSIFICATION REPORT) ---
-    # Gồm: Precision (Độ chính xác), Recall (Độ nhạy), F1-score cho từng lớp
+    
     ten_lop = ['Binh thuong (0)', 'Tan cong (1)']
     bao_cao_phan_loai = classification_report(
         y_kiem_thu,
@@ -187,9 +162,7 @@ def danh_gia_mo_hinh(mo_hinh: RandomForestClassifier, X_kiem_thu, y_kiem_thu):
     print("=" * 55 + "\n")
 
 
-# =============================================================================
 # BƯỚC 5: XUẤT FILE MÔ HÌNH (EXPORT MODEL)
-# =============================================================================
 def xuat_mo_hinh(mo_hinh: RandomForestClassifier, ten_file_xuat: str):
     """
     Hàm lưu mô hình đã huấn luyện thành file .pkl để tái sử dụng
@@ -206,11 +179,7 @@ def xuat_mo_hinh(mo_hinh: RandomForestClassifier, ten_file_xuat: str):
     print(f"Da luu mo hinh thanh cong tai {ten_file_xuat}. San sang tich hop vao Core Server")
 
 
-# =============================================================================
-# ĐIỂM KHỞI CHẠY CHƯƠNG TRÌNH (ENTRY POINT)
-# Toàn bộ logic chính được đặt trong khối này để đảm bảo script
-# chỉ chạy khi được thực thi trực tiếp, không chạy khi bị import
-# =============================================================================
+
 if __name__ == '__main__':
 
     print("=" * 55)
